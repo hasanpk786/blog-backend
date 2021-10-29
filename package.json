@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "engines": {
+    "node": "14.17.6"
+  },
   "comment": "npm run dev to start nodemon server",
   "scripts": {
     "start": "node server.js",
