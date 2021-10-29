@@ -4,7 +4,11 @@ const dotenv = require('dotenv')
 const connectDB = require("./Db.js")
 const app = express();
 app.use(express.json());
-const port = 5000
+// const port = 5000
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 5000;
+}
 require("./models/UserModel.js");
 const User = mongoose.model('users');
 require("./models/BlogModel.js");
