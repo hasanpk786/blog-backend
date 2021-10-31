@@ -18,12 +18,13 @@ const Blog = mongoose.model('blogs');
 dotenv.config();
 connectDB();
 
+//testing
 app.get('/', (req, res) => {
     res.send('Hello!!')
 });
 
 // creates a user
-app.post('/checkuser',
+app.post('/adduser',
     async (req, res) => {
         console.log("checks");
         console.log("check", req.body);
@@ -41,7 +42,7 @@ app.post('/checkuser',
             name: req.body.name,
             email: req.body.email,
             password: bcrypt.hashSync(req.body.password, 10),
-            // password: req.body.password,//hash password here.
+            
         });
 
         if (TestUser) {
@@ -54,8 +55,8 @@ app.post('/checkuser',
 
 
 //creates a blog
-app.post('/checkblogs', (req, res) => {
-    console.log("checks");
+app.post('/addblogs',
+ async (req, res) => {
     console.log("check", req.body)
     const TestBlog = new Blog({
         blogtitle: req.body.blogtitle,
@@ -66,7 +67,7 @@ app.post('/checkblogs', (req, res) => {
 
     if (TestBlog) {
         res.status(200).send(TestBlog);
-        TestBlog.save().then(console.log('works2?')).catch(err => res.status(400).send(err));
+        await TestBlog.save().then(console.log('works2?')).catch(err => res.status(400).send(err));
     } else {
         res.status(400).send("TestBlog is invalid");
     }
@@ -176,7 +177,7 @@ app.post("/login",
 
         let credentials = new User({
             email: req.body.email,
-            passwordHash: bcrypt.hashSync(req.body.password, 10),
+            password: bcrypt.hashSync(req.body.password, 10),
         });
 
         const user = await User.findOne({ email: credentials.email });
@@ -186,8 +187,6 @@ app.post("/login",
                 .status(500)
                 .json("User doesn't exist.");
         } else {
-            // bcrypt.compareSync(req.body.password, user.password)
-            // if (user && req.body.password === user.password) {
             if (user && (bcrypt.compareSync(req.body.password, user.password) ||
                 (user && req.body.password === user.password))) {
                 console.log("here in paswd check");
@@ -210,7 +209,7 @@ app.post("/login",
 
     });
 
-
+//update profile
 app.put('/profile/:id', async (req, res) => {
     const foundUser = await User.findById(req.params.id);
 
