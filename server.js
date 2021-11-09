@@ -11,6 +11,9 @@ const Routes = require('./Routes');
 
 app.use('/Routes', Routes);
 
+app.get("/", (req, res) => {
+res.send("Hello World");
+})
 
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)

@@ -5,6 +5,7 @@ const connectDB = require("./Db.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const router = express.Router()
+// const bodyParser = require('body-parser')
 require("./models/UserModel.js");
 const User = mongoose.model('users');
 require("./models/BlogModel.js");
@@ -12,11 +13,22 @@ const Blog = mongoose.model('blogs');
 dotenv.config();
 connectDB();
 
+// router.use(bodyParser.urlencoded({ extended: false }));
+// router.use(bodyParser.json());
 
 //testing
-router.get('/', (req, res) => {
-    res.send('Hello!!')
-});
+router.get('/first/:id',
+    async (req, res) => {
+        const userId_body = req.body.id;
+        const userparamsID = req.params.id;
+        console.log("UID check", userId_body, "paramsID:", userparamsID);
+        // var user = new User;
+        const user = await User.findById(userId_body).select('-password')
+
+        console.log("UID check2", user.name, "paramuser", await User.findById(userparamsID).select('-password'));
+
+        res.send('Hello!!')
+    });
 
 // creates a user
 router.post('/adduser',
