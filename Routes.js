@@ -23,12 +23,19 @@ router.get('/first/:id',
         const userparamsID = req.params.id;
         console.log("UID check", userId_body, "paramsID:", userparamsID);
         // var user = new User;
-        const user = await User.findById(userId_body).select('-password')
-
-        console.log("UID check2", user.name, "paramuser", await User.findById(userparamsID).select('-password'));
+        const user = await User.findById(userId_body).select('-password')//delete Id from body
+        const admin = await User.findById(userparamsID).select('-password')//asad ID from params.
+        console.log("UID check2", user.name, "paramuser", admin.name);
+       
+        if (admin.isAdmin) {
+            console.log("admin bool comparision works")
+        } else {
+            console.log("admin comparision failed")
+        }
 
         res.send('Hello!!')
     });
+
 
 // creates a user
 router.post('/adduser',
@@ -49,7 +56,7 @@ router.post('/adduser',
             name: req.body.name,
             email: req.body.email,
             password: bcrypt.hashSync(req.body.password, 10),
-
+            // isAdmin: req.body.isAdmin
         });
 
         if (TestUser) {
@@ -224,6 +231,7 @@ router.put('/profile/:id', async (req, res) => {
     if (foundUser) {
         foundUser.name = req.body.name || foundUser.name;
         foundUser.email = req.body.email || foundUser.email;
+
         if (req.body.password) {
             foundUser.password = bcrypt.hashSync(req.body.password, 10)
         }
