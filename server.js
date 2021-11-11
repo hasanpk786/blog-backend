@@ -7,12 +7,15 @@ if (port == null || port == "") {
     port = 5000;
 }
 
+const cors = require('cors')
+app.use(cors());
+
 const Routes = require('./Routes');
 
 app.use('/Routes', Routes);
 
 app.get("/", (req, res) => {
-res.send("Hello World");
+    res.send("Hello World");
 })
 
 app.listen(port, () => {
