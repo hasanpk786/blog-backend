@@ -10,9 +10,9 @@ if (port == null || port == "") {
 const cors = require('cors')
 app.use(cors());
 
-const Routes = require('./Routes');
+const Routes = require('./routes');
 
-app.use('/Routes', Routes);
+app.use('/routes', Routes);
 
 app.get("/", (req, res) => {
     res.send("Hello World");
@@ -22,17 +22,3 @@ app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)
 })
 
-
-
-// const mongoose = require('mongoose');
-// const dotenv = require('dotenv');
-// const connectDB = require("./Db.js");
-// const bcrypt = require("bcryptjs");
-// const jwt = require("jsonwebtoken");
-
-// require("./models/UserModel.js");
-// const User = mongoose.model('users');
-// require("./models/BlogModel.js");
-// const Blog = mongoose.model('blogs');
-// dotenv.config();
-// connectDB();

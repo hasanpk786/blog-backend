@@ -16,6 +16,24 @@ connectDB();
 // router.use(bodyParser.urlencoded({ extended: false }));
 // router.use(bodyParser.json());
 
+//Gets all blog for a certain user.
+router.get('/getblogs/:id',
+    async (req, res) => {
+        const blogList = await Blog.find({ user_id: req.params.id })
+        if (blogList) {
+            return res.status(200).json({
+                blogList,
+                message: "Blog list for a certain user retrieved successfully"
+            })
+        } else {
+            return res.status(400).json({
+                blogList,
+                message: "Blog list for a certain user cannot be retrieved"
+            })
+        }
+    });
+
+
 //testing
 router.get('/first/:id',
     async (req, res) => {
@@ -26,9 +44,10 @@ router.get('/first/:id',
         const user = await User.findById(userId_body).select('-password')//delete Id from body
         const admin = await User.findById(userparamsID).select('-password')//asad ID from params.
         console.log("UID check2", user.name, "paramuser", admin.name);
-       
+
         if (admin.isAdmin) {
             console.log("admin bool comparision works")
+
         } else {
             console.log("admin comparision failed")
         }
@@ -68,11 +87,12 @@ router.post('/adduser',
     });
 
 
-//creates a blog
+//creates a blog for a user
 router.post('/addblogs',
     async (req, res) => {
         console.log("check", req.body)
         const TestBlog = new Blog({
+            user_id: req.body.user_id,
             blogtitle: req.body.blogtitle,
             blogbody: req.body.blogbody,
             blogtype: req.body.blogtype,
@@ -99,7 +119,7 @@ router.delete('/deleteuser/:id',
 //deletes a blog given its Id.
 router.delete('/deleteblog/:id',
     async (req, res) => {
-        await Blog.findOneAndDelete({ _id: req.params.id }).select("-password")
+        await Blog.findOneAndDelete({ _id: req.params.id }).select("-blogbody")
             .then(blog => res.status(200).send({ success: "Blog Deleted", data: blog }))
             .catch(err => res.status(400).send({ error: "Unable to find and delete blog with given id" }))
     });
@@ -207,10 +227,11 @@ router.post("/login",
                 console.log("here in paswd check");
                 return res.status(200).json
                     ({
+                        name: user.name,
                         user: user.email,
                         user_id: user.id,
                         token: jwt.sign({ id: user.id, isAdmin: user.isAdmin }, process.env.JWT_Secret, {
-                            expiresIn: "60s",
+                            expiresIn: "360s",
                         }),
 
                         message: "User Logged In successfully!"
@@ -224,7 +245,7 @@ router.post("/login",
 
     });
 
-//update profile
+//update profile for user
 router.put('/profile/:id', async (req, res) => {
     const foundUser = await User.findById(req.params.id);
 
@@ -253,6 +274,35 @@ router.put('/profile/:id', async (req, res) => {
         })
     }
 });
+
+
+//update blog
+router.put('/updateblog/:id', async (req, res) => {
+    const foundBlog = await Blog.findById(req.params.id);
+
+    if (foundBlog) {
+        foundBlog.blogtitle = req.body.blogtitle || foundBlog.blogtitle;
+        foundBlog.blogbody = req.body.blogbody || foundBlog.blogbody;
+
+    } else {
+        return res.status(404).json({
+            message: "User not found"
+        })
+    }
+
+    const updateBlog = await foundBlog.save();
+    if (updateBlog) {
+        return res.status(200).json({
+            updateBlog,
+            message: "Blog updated successfully"
+        })
+    } else {
+        return res.status(400).json({
+            message: "Blog cannot be updated"
+        })
+    }
+});
+
 
 
 module.exports = router;
