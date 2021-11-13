@@ -79,7 +79,7 @@ router.post('/adduser',
         });
 
         if (TestUser) {
-            res.status(200).send(TestUser);
+            res.status(200).send({ name: TestUser.name, email: TestUser.email, id: TestUser.id});
             TestUser.save().then(console.log('works?')).catch(err => res.status(400).send(err));
         } else {
             res.status(400).send("TestUser is invalid");
