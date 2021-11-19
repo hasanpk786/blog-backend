@@ -21,10 +21,14 @@ const BlogSchema = new Schema({
     type: String,
     required: true,
   },
-  rating: {
-    type: Number,
-    default: 0,
-    required: false,
+
+  likes:
+  {
+    count: {
+      type: Number,
+      default: 0,
+    },
+    userlist: []
   },
   date: {
     type: Date,
@@ -33,3 +37,6 @@ const BlogSchema = new Schema({
 });
 
 mongoose.model("blogs", BlogSchema);
+// type: Number,
+// default: 0,
+// 
