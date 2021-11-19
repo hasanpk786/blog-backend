@@ -20,21 +20,32 @@ connectDB();
 router.get('/getblogs/:id',
     async (req, res) => {
         const blogList = await Blog.find({ user_id: req.params.id })
-        if (blogList) {
+        if (blogList.length > 0) {
+            //code 0 means no error 1 means vice versa
             return res.status(200).json({
-                blogList,
-                message: "Blog list for a certain user retrieved successfully"
-            })
+                header: {
+                    message: "Blog list for a certain user retrieved successfully",
+                    code: 0,
+                },
+                data: {
+                    blogList
+                },
+            });
         } else {
             return res.status(400).json({
-                blogList,
-                message: "Blog list for a certain user cannot be retrieved"
+                header: {
+                    message: "Blog list for a certain user cannot be retrieved. User has no blogs",
+                    code: 1,
+                },
+                data: {
+                    blogList,
+                }
             })
         }
     });
 
 
-//testing
+//testing ignore
 router.get('/first/:id',
     async (req, res) => {
         const userId_body = req.body.id;
@@ -59,8 +70,8 @@ router.get('/first/:id',
 // creates a user
 router.post('/adduser',
     async (req, res) => {
-        console.log("checks");
-        console.log("check", req.body);
+        // console.log("checks");
+        // console.log("check", req.body);
         const { email } = req.body;
         const userExist =
             await User.findOne({ email });
@@ -68,7 +79,12 @@ router.post('/adduser',
         if (userExist) {
             return res
                 .status(400)
-                .send("User Already exist with this email");
+                .json({
+                    header: {
+                        message: "User Already exist with this email",
+                        code: 1
+                    }
+                });
         }
 
         const TestUser = new User({
@@ -80,10 +96,28 @@ router.post('/adduser',
 
         if (TestUser) {
             // {header:{} , data: { name: TestUser.name, email: TestUser.email, id: TestUser.id } }
-            res.status(200).send({ header: {}, data: { name: TestUser.name, email: TestUser.email, id: TestUser.id } });
-            TestUser.save().then(console.log('works?')).catch(err => res.status(400).send(err));
+            res.status(200).send({
+                header: {
+                    message: "", code: 0
+                },
+                data: {
+                    name: TestUser.name, email: TestUser.email, id: TestUser.id
+                }
+            });
+
+            TestUser.save().then(console.log('works?')).catch(err => res.status(400).send({
+                header: {
+                    message: "User cannot be saved", err,
+                    code: 1
+                }
+            }));
         } else {
-            res.status(400).send("TestUser is invalid");
+            res.status(400).send({
+                header: {
+                    message: "User is invalid", err,
+                    code: 1
+                }
+            });
         }
     });
 
@@ -101,10 +135,27 @@ router.post('/addblogs',
         });
 
         if (TestBlog) {
-            res.status(200).send(TestBlog);
-            await TestBlog.save().then(console.log('works2?')).catch(err => res.status(400).send(err));
+            res.status(200).send({
+                header: {
+                    message: "Blog added successfuly",
+                    code: 0
+                },
+                data: TestBlog
+            });
+
+            await TestBlog.save().then(console.log('works2?')).catch(err => res.status(400).send({
+                header: {
+                    message: "Blog cannot be saved", err,
+                    code: 1
+                }
+            }));
         } else {
-            res.status(400).send("TestBlog is invalid");
+            res.status(400).send({
+                header: {
+                    message: "Blog is invalid", err,
+                    code: 1
+                }
+            });
         }
     });
 
@@ -113,16 +164,24 @@ router.post('/addblogs',
 router.delete('/deleteuser/:id',
     async (req, res) => {
         await User.findOneAndDelete({ _id: req.params.id }).select("-password")
-            .then(user => res.status(200).send({ success: "User Deleted", data: user }))
-            .catch(err => res.status(400).send({ error: "Unable to find and delete user with given id" }))
+            .then(user => res.status(200).send({
+                header: { message: "User Deleted", code: 0 }, data: user
+            }))
+            .catch(err => res.status(400).send({
+                header: { message: "Unable to find and delete user with given id", code: 1 }
+            }))
     });
 
 //deletes a blog given its Id.
 router.delete('/deleteblog/:id',
     async (req, res) => {
         await Blog.findOneAndDelete({ _id: req.params.id }).select("-blogbody")
-            .then(blog => res.status(200).send({ success: "Blog Deleted", data: blog }))
-            .catch(err => res.status(400).send({ error: "Unable to find and delete blog with given id" }))
+            .then(blog => res.status(200).send({
+                header: { message: "Blog Deleted", code: 0 }, data: blog
+            }))
+            .catch(err => res.status(400).send({
+                header: { message: "Unable to find and delete blog with given id", code: 1 }
+            }))
     });
 
 
@@ -131,18 +190,22 @@ router.get('/user/:id', async (req, res) => {
     const userId = req.params.id;
     const user = await User.findById(userId).select('-password')
         .then(res.status(200))
-        .catch(err => res.status(400).send({ error: "Unable to find user with given id" }));
+        .catch(err => res.status(400).send({
+            header: { message: "Unable to find user with given id", code: 1 }
+        }));
 
     //do not send data inside 'then()' as that exits out of the request. (Although that should work as well)
     if (user) {
         return res.status(200).send({
-            user,
-            message: "User retrieved successfully"
+            header: { message: "User retrieved successfully", code: 0 },
+            data: user,
+
         })
     } else {
         return res.status(400).send({
-            user,
-            message: "Error in retrieiving User"
+            header: { message: "Error in retrieiving User", code: 1 },
+            data: user,
+
         })
     }
 });
@@ -152,16 +215,18 @@ router.get('/blog/:id', async (req, res) => {
     const blogId = req.params.id;
     const blog = await Blog.findById(blogId)
         .then(res.status(200))
-        .catch(err => res.status(400).send({ error: "Unable to find and blog with given id" }));
+        .catch(err => res.status(400).send({
+            header: { message: "Unable to find and blog with given id", code: 1 }
+        }));
     if (blog) {
         return res.status(200).send({
-            blog,
-            message: "Blog retrieved successfully"
+            header: { message: "Blog retrieved successfully", code: 0 },
+            data: blog
         })
     } else {
         return res.status(400).send({
-            blog,
-            message: "Error in retrieiving Blog"
+            header: { message: "Error in retrieiving Blog", code: 1 },
+            data: blog
         })
     }
 });
@@ -170,17 +235,18 @@ router.get('/blog/:id', async (req, res) => {
 // Find all users
 //list of all users without password
 router.get('/SuperAdmin/allUsers', async (req, res) => {
-    const userList = await User.find({}).select('-password').limit(10).skip(10);
+    const userList = await User.find({}).select('-password')
     if (userList) {
         return res.status(200).json({
-            countervar: countervar,
-            userList,
-            message: "User list retrieved successfully"
+            header: { message: "User list retrieved successfully", code: 0 },
+            data: {
+                Users: { listlength: userList.length, userList }
+            }
         })
     } else {
         return res.status(400).json({
-            userList,
-            message: "User list canot be retrieved"
+            header: { message: "User list cannot be retrieved", code: 1 },
+            data: userList
         })
     }
 });
@@ -192,13 +258,14 @@ router.get('/SuperAdmin/allBlogs', async (req, res) => {
     const blogList = await Blog.find({}).select('-blogbody');
     if (blogList) {
         return res.status(200).json({
-            blogList,
-            message: "Blog list retrieved successfully"
+            header: { message: "Blog list retrieved successfully", code: 0 },
+            data: { listlength: blogList.length, blogList }
         })
     } else {
         return res.status(400).json({
-            blogList,
-            message: "User list canot be retrieved"
+            header: { message: "User list canot be retrieved", code: 1 },
+            data: blogList,
+
         })
     }
 });
@@ -209,7 +276,9 @@ router.post("/login",
         if (Object.keys(req.body).length === 0) {
             return res
                 .status(500)
-                .json("Body fields cannot be empty.");
+                .json({
+                    header: { message: "Body fields cannot be empty.", code: 1 }
+                });
         }
 
         let credentials = new User({
@@ -222,26 +291,31 @@ router.post("/login",
         if (!user) {
             return res
                 .status(500)
-                .json("User doesn't exist.");
+                .json({
+                    header: { message: "User doesn't exist.", code: 1 }
+                });
         } else {
             if (user && (bcrypt.compareSync(req.body.password, user.password) ||
                 (user && req.body.password === user.password))) {
                 console.log("here in paswd check");
                 return res.status(200).json
                     ({
-                        name: user.name,
-                        user: user.email,
-                        user_id: user.id,
-                        token: jwt.sign({ id: user.id, isAdmin: user.isAdmin }, process.env.JWT_Secret, {
-                            expiresIn: "360s",
-                        }),
-
-                        message: "User Logged In successfully!"
+                        header: { message: "User Logged In successfully!", code: 0 },
+                        data: {
+                            name: user.name,
+                            user: user.email,
+                            user_id: user.id,
+                            token: jwt.sign({ id: user.id, isAdmin: user.isAdmin }, process.env.JWT_Secret, {
+                                expiresIn: "360s",
+                            }),
+                        }
                     })
             } else {
                 return res
                     .status(400)
-                    .json("Please enter correct credentials");
+                    .json({
+                        header: { message: "Please enter correct credentials", code: 1 },
+                    });
             }
         }
 
@@ -260,19 +334,19 @@ router.put('/profile/:id', async (req, res) => {
         }
     } else {
         return res.status(404).json({
-            message: "User not found"
+            header: { message: "User not found", code: 1 }
         })
     }
 
     const updatedUser = await foundUser.save();
     if (updatedUser) {
         return res.status(200).json({
-            updatedUser,
-            message: "User updated successfully"
+            header: { message: "User updated successfully", code: 0 },
+            data: updatedUser,
         })
     } else {
         return res.status(400).json({
-            message: "User cannot be updated"
+            header: { message: "User cannot be updated", code: 1 }
         })
     }
 });
@@ -288,19 +362,20 @@ router.put('/updateblog/:id', async (req, res) => {
 
     } else {
         return res.status(404).json({
-            message: "User not found"
+            header: { message: "User not found", code: 1 }
         })
     }
 
     const updateBlog = await foundBlog.save();
     if (updateBlog) {
         return res.status(200).json({
-            updateBlog,
-            message: "Blog updated successfully"
+            header: { message: "Blog updated successfully", code: 0 },
+            data: updateBlog,
+
         })
     } else {
         return res.status(400).json({
-            message: "Blog cannot be updated"
+            header: { message: "Blog cannot be updated", code: 1 }
         })
     }
 });
@@ -310,9 +385,14 @@ router.get('/usercount',
     async (req, res) => {
         const countervar = await User.collection.countDocuments();
         if (countervar > 0) {
-            res.status(200).json({ countervar });
+            res.status(200).json({
+                header: { message: "Total User count retreived successfuly", code: 0 },
+                data: { UserCount: countervar }
+            });
         } else {
-            res.status(400).json("No document present");
+            res.status(400).json({
+                header: { message: "No documents found in Users collection", code: 1 },
+            });
         }
     })
 
@@ -320,9 +400,15 @@ router.get('/blogcount',
     async (req, res) => {
         const countervar = await Blog.collection.countDocuments();
         if (countervar > 0) {
-            res.status(200).json({ countervar });
+            res.status(200).json({
+                header: { message: "Total Blog count retreived successfuly", code: 0 },
+                data: { BlogCount: countervar }
+            });
         } else {
-            res.status(400).json("No document present");
+
+            res.status(400).json({
+                header: { message: "No documents found in Blog collection", code: 1 }
+            });
         }
     })
 
