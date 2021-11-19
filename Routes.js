@@ -79,7 +79,8 @@ router.post('/adduser',
         });
 
         if (TestUser) {
-            res.status(200).send({ name: TestUser.name, email: TestUser.email, id: TestUser.id});
+            // {header:{} , data: { name: TestUser.name, email: TestUser.email, id: TestUser.id } }
+            res.status(200).send({ header: {}, data: { name: TestUser.name, email: TestUser.email, id: TestUser.id } });
             TestUser.save().then(console.log('works?')).catch(err => res.status(400).send(err));
         } else {
             res.status(400).send("TestUser is invalid");
@@ -169,9 +170,10 @@ router.get('/blog/:id', async (req, res) => {
 // Find all users
 //list of all users without password
 router.get('/SuperAdmin/allUsers', async (req, res) => {
-    const userList = await User.find({}).select('-password');
+    const userList = await User.find({}).select('-password').limit(10).skip(10);
     if (userList) {
         return res.status(200).json({
+            countervar: countervar,
             userList,
             message: "User list retrieved successfully"
         })
@@ -304,5 +306,24 @@ router.put('/updateblog/:id', async (req, res) => {
 });
 
 
+router.get('/usercount',
+    async (req, res) => {
+        const countervar = await User.collection.countDocuments();
+        if (countervar > 0) {
+            res.status(200).json({ countervar });
+        } else {
+            res.status(400).json("No document present");
+        }
+    })
+
+router.get('/blogcount',
+    async (req, res) => {
+        const countervar = await Blog.collection.countDocuments();
+        if (countervar > 0) {
+            res.status(200).json({ countervar });
+        } else {
+            res.status(400).json("No document present");
+        }
+    })
 
 module.exports = router;
