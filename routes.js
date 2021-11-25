@@ -12,6 +12,7 @@ require("./models/BlogModel.js");
 const Blog = mongoose.model('blogs');
 dotenv.config();
 connectDB();
+const { protect } = require("./middleware/auth");
 
 // router.use(bodyParser.urlencoded({ extended: false }));
 // router.use(bodyParser.json());
@@ -234,7 +235,7 @@ router.get('/blog/:id', async (req, res) => {
 
 // Find all users
 //list of all users without password
-router.get('/SuperAdmin/allUsers', async (req, res) => {
+router.get('/SuperAdmin/allUsers', protect, async (req, res) => {
     const userList = await User.find({}).select('-password')
     if (userList) {
         return res.status(200).json({
@@ -306,7 +307,7 @@ router.post("/login",
                             user: user.email,
                             user_id: user.id,
                             token: jwt.sign({ id: user.id, isAdmin: user.isAdmin }, process.env.JWT_Secret, {
-                                expiresIn: "360s",
+                                expiresIn: "20s",
                             }),
                         }
                     })
