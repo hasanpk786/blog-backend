@@ -69,7 +69,7 @@ router.get('/first/:id',
 
 
 // creates a user
-router.post('/adduser', protect,
+router.post('/adduser',
     async (req, res) => {
         // console.log("checks");
         // console.log("check", req.body);
