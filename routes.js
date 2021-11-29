@@ -307,7 +307,7 @@ router.post("/login",
                             user: user.email,
                             user_id: user.id,
                             token: jwt.sign({ id: user.id, isAdmin: user.isAdmin }, process.env.JWT_Secret, {
-                                expiresIn: "20s",
+                                expiresIn: "360s",
                             }),
                         }
                     })
