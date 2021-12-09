@@ -10,6 +10,10 @@ require("./models/UserModel.js");
 const User = mongoose.model('users');
 require("./models/BlogModel.js");
 const Blog = mongoose.model('blogs');
+
+require("./models/ProgramModel.js");
+const Program = mongoose.model('programs');
+
 dotenv.config();
 connectDB();
 const { protect } = require("./middleware/auth");
@@ -17,11 +21,35 @@ const { protect } = require("./middleware/auth");
 // router.use(bodyParser.urlencoded({ extended: false }));
 // router.use(bodyParser.json());
 
-//Gets all blog for a certain user.
-router.get('/getblogs/:id', protect,
+router.get('/getProgramBase/:pg',
     async (req, res) => {
+        var nums = parseInt(req.params.pg);
+        var numslimit = 1;
+        const ProgramFilter = await Program.find(req.query).limit(numslimit).skip(numslimit * nums);
+        console.log(numslimit);
+        console.log(ProgramFilter);
+        console.log(req.query);
+        res.status(200).json({
+            header: { message: "Program Filter found", code: 1 },
+            data: ProgramFilter,
+        });
+
+    });
+
+
+//Gets all blog for a certain user.
+router.get('/getblogs/:id',
+    async (req, res) => {
+        var temp;
         const blogList = await Blog.find({ user_id: req.params.id })
-        if (blogList.length > 0) {
+        const user = await User.findById(req.params.id).select("-password")
+        const count = await Blog.countDocuments({ user_id: req.params.id });
+
+
+        if (blogList.length > 0 && user) {
+            // setTimeout(function () {
+
+            const Uname = user.name
             //code 0 means no error 1 means vice versa
             return res.status(200).json({
                 header: {
@@ -29,9 +57,12 @@ router.get('/getblogs/:id', protect,
                     code: 0,
                 },
                 data: {
+                    count,
+                    Username: Uname,
                     blogList
                 },
             });
+            // }, 500);
         } else {
             return res.status(400).json({
                 header: {
@@ -99,7 +130,7 @@ router.post('/adduser',
             // {header:{} , data: { name: TestUser.name, email: TestUser.email, id: TestUser.id } }
             res.status(200).json({
                 header: {
-                    message: "", code: 0
+                    message: "User Made", code: 0
                 },
                 data: {
                     name: TestUser.name, email: TestUser.email, id: TestUser.id
@@ -260,16 +291,31 @@ router.get('/SuperAdmin/allUsers', protect,
 // list of all blogs without body
 router.get('/SuperAdmin/allBlogs', protect,
     async (req, res) => {
-        const blogList = await Blog.find({}).select('-blogbody').limit(100).skip(0);
+        const blogList = await Blog.find({}).select('-blogbody').limit(5).skip(0);
+        var newList = JSON.parse(JSON.stringify(blogList));
         if (blogList) {
+            const iterator = blogList.length;
+            var username;
+            for (var i = 0; i < iterator; i++) {
+                var xyz = newList[i].user_id;
+                var User_Blog = await User.findById(xyz.toString());
+                if (User_Blog) {
+                    username = (User_Blog.name)
+                    newList[i]["Uname"] = username
+                } else {
+                    username = "user is null"
+                    newList[i]["Uname"] = username
+                }
+            }
             return res.status(200).json({
                 header: { message: "Blog list retrieved successfully", code: 0 },
-                data: { listlength: blogList.length, blogList }
+
+                data: { listlength: newList.length, newList }
             })
         } else {
             return res.status(400).json({
                 header: { message: "User list canot be retrieved", code: 1 },
-                data: blogList,
+                data: newList,
 
             })
         }
@@ -464,3 +510,20 @@ router.get('/blogcount', protect,
     })
 
 module.exports = router;
+
+
+
+
+
+// query.countDocuments({ user_id: user.id });
+        // console.log(countQuery)
+        // const countervar = await Blog.collection.countDocuments({ user_id: user.id },
+        //     function (err, count) {
+
+        //         if (err) {
+        //             console.log(err)
+        //         } else {
+        //             console.log("Count :", count)
+        //         }
+
+        //     })

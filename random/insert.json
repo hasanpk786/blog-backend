@@ -1,0 +1,25 @@
+[
+    {
+        "programName": "Event 2",
+        "shortDescription": "Short desc",
+        "longDescription": "Amaxing event Long description",
+        "price": "500",
+        "ticketSelect": "ticket 1,ticket 2, ticket 3",
+        "programTag": [
+            "Great",
+            "Event",
+            "Festive"
+        ],
+        "programThumbnail": "URL",
+        "duration": "2 hours",
+        "programFee": "1000",
+        "whoJoin": "Everyone, Adults",
+        "Featured": false,
+        "Cap": 5,
+        "Location": "Karachi, Pakistna",
+        "startDate": "2021-12-08T10:39:46+0000",
+        "endDate": "2021-12-10T10:39:46+0000",
+        "Eventdates": "Nice Eventdates",
+        "relatedEvents": "None"
+    }
+]
