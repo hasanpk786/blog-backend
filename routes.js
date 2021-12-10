@@ -21,6 +21,8 @@ const { protect } = require("./middleware/auth");
 // router.use(bodyParser.urlencoded({ extended: false }));
 // router.use(bodyParser.json());
 
+
+//
 router.get('/getProgramBase/:pg',
     async (req, res) => {
         var nums = parseInt(req.params.pg);
@@ -38,10 +40,14 @@ router.get('/getProgramBase/:pg',
 
 
 //Gets all blog for a certain user.
-router.get('/getblogs/:id',
+router.get('/getblogs/:id/:lim/:pg', protect,
     async (req, res) => {
         var temp;
-        const blogList = await Blog.find({ user_id: req.params.id })
+        var numslimit = parseInt(req.params.lim);
+        var page = parseInt(req.params.pg) - 1;
+
+
+        const blogList = await Blog.find({ user_id: req.params.id }).limit(numslimit).skip(numslimit * page)
         const user = await User.findById(req.params.id).select("-password")
         const count = await Blog.countDocuments({ user_id: req.params.id });
 
@@ -59,6 +65,7 @@ router.get('/getblogs/:id',
                 data: {
                     count,
                     Username: Uname,
+                    Displaylength: blogList.length,
                     blogList
                 },
             });
@@ -86,7 +93,7 @@ router.get('/first/:id',
         // var user = new User;
         const user = await User.findById(userId_body).select('-password')//delete Id from body
         const admin = await User.findById(userparamsID).select('-password')//asad ID from params.
-        console.log("UID check2", user.name, "paramuser", admin.name);
+        // console.log("UID check2", user.name, "paramuser", admin.name);
 
         if (admin.isAdmin) {
             console.log("admin bool comparision works")
