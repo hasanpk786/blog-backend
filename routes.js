@@ -42,7 +42,6 @@ router.get('/getProgramBase/:pg',
 //Gets all blog for a certain user.
 router.get('/getblogs/:id/:lim/:pg', protect,
     async (req, res) => {
-        var temp;
         var numslimit = parseInt(req.params.lim);
         var page = parseInt(req.params.pg) - 1;
 
@@ -299,9 +298,12 @@ router.get('/SuperAdmin/allUsers/:lim/:pg', protect,
 
 // Find all blogs
 // list of all blogs without body
-router.get('/SuperAdmin/allBlogs', protect,
+router.get('/SuperAdmin/allBlogs/:lim/:pg', protect,
     async (req, res) => {
-        const blogList = await Blog.find({}).select('-blogbody').limit(5).skip(0);
+        var numslimit = parseInt(req.params.lim);
+        var page = parseInt(req.params.pg) - 1;
+        const blogList = await Blog.find({}).select('-blogbody').limit(numslimit).skip(numslimit * page)
+
         var newList = JSON.parse(JSON.stringify(blogList));
         if (blogList) {
             const iterator = blogList.length;
