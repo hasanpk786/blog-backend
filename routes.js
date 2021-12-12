@@ -308,7 +308,7 @@ router.get('/SuperAdmin/allBlogs', protect,
             var username;
             for (var i = 0; i < iterator; i++) {
                 var xyz = newList[i].user_id;
-                var User_Blog = await User.findById(xyz.toString());
+                var User_Blog = await User.findById(xyz.toString()).select('-password');
                 if (User_Blog) {
                     username = (User_Blog.name)
                     newList[i]["Uname"] = username
