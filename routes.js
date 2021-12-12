@@ -273,18 +273,19 @@ router.get('/blog/:id', protect,
 
 
 // Find all users
-//list of all users without password
+// list of all users without password
 router.get('/SuperAdmin/allUsers/:lim/:pg', protect,
     async (req, res) => {
         var numslimit = parseInt(req.params.lim);
         var page = parseInt(req.params.pg) - 1;
         const userList = await User.find({}).select('-password').limit(numslimit).skip(numslimit * page)
+        const count = await User.countDocuments();
 
         if (userList) {
             return res.status(200).json({
                 header: { message: "User list retrieved successfully", code: 0 },
                 data: {
-                    Users: { listlength: userList.length, userList }
+                    Users: { count: count, listlength: userList.length, userList }
                 }
             })
         } else {
@@ -303,6 +304,7 @@ router.get('/SuperAdmin/allBlogs/:lim/:pg', protect,
         var numslimit = parseInt(req.params.lim);
         var page = parseInt(req.params.pg) - 1;
         const blogList = await Blog.find({}).select('-blogbody').limit(numslimit).skip(numslimit * page)
+        const count = await Blog.countDocuments();
 
         var newList = JSON.parse(JSON.stringify(blogList));
         if (blogList) {
@@ -322,7 +324,7 @@ router.get('/SuperAdmin/allBlogs/:lim/:pg', protect,
             return res.status(200).json({
                 header: { message: "Blog list retrieved successfully", code: 0 },
 
-                data: { listlength: newList.length, newList }
+                data: { count: count, listlength: newList.length, newList }
             })
         } else {
             return res.status(400).json({
