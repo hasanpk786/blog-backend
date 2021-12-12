@@ -275,9 +275,12 @@ router.get('/blog/:id', protect,
 
 // Find all users
 //list of all users without password
-router.get('/SuperAdmin/allUsers', protect,
+router.get('/SuperAdmin/allUsers/:lim/:pg', protect,
     async (req, res) => {
-        const userList = await User.find({}).select('-password')
+        var numslimit = parseInt(req.params.lim);
+        var page = parseInt(req.params.pg) - 1;
+        const userList = await User.find({}).select('-password').limit(numslimit).skip(numslimit * page)
+
         if (userList) {
             return res.status(200).json({
                 header: { message: "User list retrieved successfully", code: 0 },
