@@ -17,6 +17,7 @@ const Program = mongoose.model('programs');
 dotenv.config();
 connectDB();
 const { protect } = require("./middleware/auth");
+const { checkAdmin } = require("./middleware/isAdmin");
 
 // router.use(bodyParser.urlencoded({ extended: false }));
 // router.use(bodyParser.json());
@@ -210,6 +211,32 @@ router.delete('/deleteuser/:id', protect,
             }))
     });
 
+//Delete a user along with all his blogs.
+router.delete('/deleteuserWithBlogs/:id', protect,
+    async (req, res) => {
+        const removed = (mongoose.Types.ObjectId)(req.params.id)
+
+        try {
+            const user = await User.findOneAndDelete({ _id: req.params.id }).select("-password")
+            const deleted_list = await Blog.find({ user_id: req.params.id })
+            const deleted = await Blog.collection.deleteMany({ user_id: removed });
+
+            console.log(removed)
+            return res.status(200).json({
+                header: { message: "User Deleted with their blogs successfully", code: 0 },
+                data: {
+                    user,
+                    deleted,
+                    deleted_list
+                }
+            })
+        } catch (e) {
+            console.log("Deleted all blog for user error", e);
+        }
+    });
+
+
+
 //deletes a blog given its Id.
 router.delete('/deleteblog/:id', protect,
     async (req, res) => {
@@ -274,7 +301,7 @@ router.get('/blog/:id', protect,
 
 // Find all users
 // list of all users without password
-router.get('/SuperAdmin/allUsers/:lim/:pg', protect,
+router.get('/SuperAdmin/allUsers/:lim/:pg', protect, checkAdmin,
     async (req, res) => {
         var numslimit = parseInt(req.params.lim);
         var page = parseInt(req.params.pg) - 1;
@@ -303,7 +330,8 @@ router.get('/SuperAdmin/allBlogs/:lim/:pg', protect,
     async (req, res) => {
         var numslimit = parseInt(req.params.lim);
         var page = parseInt(req.params.pg) - 1;
-        const blogList = await Blog.find({}).select('-blogbody').limit(numslimit).skip(numslimit * page)
+        const blogList = await Blog.find({}).limit(numslimit).skip(numslimit * page)
+        // const blogList = await Blog.find({}).select('-blogbody').limit(numslimit).skip(numslimit * page)
         const count = await Blog.countDocuments();
 
         var newList = JSON.parse(JSON.stringify(blogList));
