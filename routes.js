@@ -47,7 +47,8 @@ router.get('/getblogs/:id/:lim/:pg', protect,
         var page = parseInt(req.params.pg) - 1;
 
 
-        const blogList = await Blog.find({ user_id: req.params.id }).limit(numslimit).skip(numslimit * page)
+        const blogList = await Blog.find({ user_id: req.params.id }).sort({ $natural: -1 })
+            .limit(numslimit).skip(numslimit * page)
         const user = await User.findById(req.params.id).select("-password")
         const count = await Blog.countDocuments({ user_id: req.params.id });
 
@@ -216,22 +217,60 @@ router.delete('/deleteuserWithBlogs/:id', protect,
     async (req, res) => {
         const removed = (mongoose.Types.ObjectId)(req.params.id)
 
-        try {
-            const user = await User.findOneAndDelete({ _id: req.params.id }).select("-password")
-            const deleted_list = await Blog.find({ user_id: req.params.id })
-            const deleted = await Blog.collection.deleteMany({ user_id: removed });
+        let token;
+        //send with name authorization (header)
+        if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+            token = req.headers.authorization.split(" ")[1];
+        }
 
-            console.log(removed)
-            return res.status(200).json({
-                header: { message: "User Deleted with their blogs successfully", code: 0 },
-                data: {
-                    user,
-                    deleted,
-                    deleted_list
+        console.log("this is token ", token);
+
+        if (!token) {
+            return res.status(401).json({
+                header: { message: "Not Authorized to access this route (No Token)", code: 1 },
+            });
+        }
+
+        try {
+            const decode = jwt.verify(token, process.env.JWT_Secret);
+            console.log("Decoded22", decode);
+            check1 = await User.findById(decode.id);
+            checkUser = await User.findById(req.params.id);
+
+
+            if (!check1.isAdmin) {
+                // if(checkUser.isAdmin)
+
+                if (check1.id !== checkUser.id) {
+                    return res.status(401).json({
+                        header: { message: "User Not Authorized to delete.", code: 1 },
+                    });
                 }
-            })
+            } else if (check1.isAdmin && checkUser.isAdmin && (check1.id !== checkUser.id)) {
+                console.log("One Admin deleting another");
+                return res.status(401).json({
+                    header: { message: "User Not Authorized to delete ANOTHER ADMIN.", code: 1 },
+                });
+            } else {
+                const user = await User.findOneAndDelete({ _id: req.params.id }).select("-password")
+                const deleted_list = await Blog.find({ user_id: req.params.id })
+                const deleted = await Blog.collection.deleteMany({ user_id: removed });
+
+                console.log(removed)
+                return res.status(200).json({
+                    header: { message: "User Deleted with their blogs successfully", code: 0 },
+                    data: {
+                        user,
+                        deleted,
+                        deleted_list
+                    }
+                })
+            }
         } catch (e) {
             console.log("Deleted all blog for user error", e);
+            return res.status(401).json({
+                header: { message: "User Not Authorized to delete.", code: 1 },
+            });
         }
     });
 
@@ -330,7 +369,7 @@ router.get('/SuperAdmin/allBlogs/:lim/:pg', protect,
     async (req, res) => {
         var numslimit = parseInt(req.params.lim);
         var page = parseInt(req.params.pg) - 1;
-        const blogList = await Blog.find({}).limit(numslimit).skip(numslimit * page)
+        const blogList = await Blog.find({}).sort({ $natural: -1 }).limit(numslimit).skip(numslimit * page)
         // const blogList = await Blog.find({}).select('-blogbody').limit(numslimit).skip(numslimit * page)
         const count = await Blog.countDocuments();
 
