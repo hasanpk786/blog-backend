@@ -216,14 +216,12 @@ router.delete('/deleteuser/:id', protect,
 router.delete('/deleteuserWithBlogs/:id', protect,
     async (req, res) => {
         const removed = (mongoose.Types.ObjectId)(req.params.id)
-
         let token;
         //send with name authorization (header)
         if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
             token = req.headers.authorization.split(" ")[1];
         }
 
-        console.log("this is token ", token);
 
         if (!token) {
             return res.status(401).json({
@@ -239,8 +237,6 @@ router.delete('/deleteuserWithBlogs/:id', protect,
 
 
             if (!check1.isAdmin) {
-                // if(checkUser.isAdmin)
-
                 if (check1.id !== checkUser.id) {
                     return res.status(401).json({
                         header: { message: "User Not Authorized to delete.", code: 1 },
@@ -488,29 +484,55 @@ router.put('/profile/:id', protect,
 //update blog
 router.put('/updateblog/:id', protect,
     async (req, res) => {
-        const foundBlog = await Blog.findById(req.params.id);
 
-        if (foundBlog) {
-            foundBlog.blogtitle = req.body.blogtitle || foundBlog.blogtitle;
-            foundBlog.blogbody = req.body.blogbody || foundBlog.blogbody;
-
-        } else {
-            return res.status(404).json({
-                header: { message: "User not found", code: 1 }
-            })
+        if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+            token = req.headers.authorization.split(" ")[1];
         }
 
-        const updateBlog = await foundBlog.save();
-        if (updateBlog) {
-            return res.status(200).json({
-                header: { message: "Blog updated successfully", code: 0 },
-                data: updateBlog,
+        if (!token) {
+            return res.status(401).json({
+                header: { message: "Not Authorized to access this route (No Token)", code: 1 },
+            });
+        }
+        try {
+            const foundBlog = await Blog.findById(req.params.id);
+            const decode = jwt.verify(token, process.env.JWT_Secret);
+            console.log("Decoded22", decode);
+            check1 = await User.findById(decode.id);
+            checkUser = await User.findById(foundBlog.user_id);
 
-            })
-        } else {
-            return res.status(400).json({
-                header: { message: "Blog cannot be updated", code: 1 }
-            })
+
+            if (!check1.isAdmin)
+                if (check1.id !== checkUser.id) {
+                    return res.status(401).json({
+                        header: { message: "User Not Authorized to Update.", code: 1 },
+                    });
+                }
+
+            if (foundBlog) {
+                foundBlog.blogtitle = req.body.blogtitle || foundBlog.blogtitle;
+                foundBlog.blogbody = req.body.blogbody || foundBlog.blogbody;
+
+            } else {
+                return res.status(404).json({
+                    header: { message: "User not found", code: 1 }
+                })
+            }
+
+            const updateBlog = await foundBlog.save();
+            if (updateBlog) {
+                return res.status(200).json({
+                    header: { message: "Blog updated successfully", code: 0 },
+                    data: updateBlog,
+
+                })
+            } else {
+                return res.status(400).json({
+                    header: { message: "Blog cannot be updated", code: 1 }
+                })
+            }
+        } catch (error) {
+
         }
     });
 
