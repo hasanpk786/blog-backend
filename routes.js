@@ -53,7 +53,7 @@ router.get('/getblogs/:id/:lim/:pg', protect,
         const count = await Blog.countDocuments({ user_id: req.params.id });
 
 
-        if (blogList.length > 0 && user) {
+        if (blogList.length > 0 && user && blogList) {
             // setTimeout(function () {
 
             const Uname = user.name
@@ -84,29 +84,6 @@ router.get('/getblogs/:id/:lim/:pg', protect,
         }
     });
 
-
-//testing ignore
-router.get('/first/:id',
-    async (req, res) => {
-        const userId_body = req.body.id;
-        const userparamsID = req.params.id;
-        console.log("UID check", userId_body, "paramsID:", userparamsID);
-        // var user = new User;
-        const user = await User.findById(userId_body).select('-password')//delete Id from body
-        const admin = await User.findById(userparamsID).select('-password')//asad ID from params.
-        // console.log("UID check2", user.name, "paramuser", admin.name);
-
-        if (admin.isAdmin) {
-            console.log("admin bool comparision works")
-
-        } else {
-            console.log("admin comparision failed")
-        }
-
-        res.json('Hello!!')
-    });
-
-
 // creates a user
 router.post('/adduser',
     async (req, res) => {
@@ -135,7 +112,6 @@ router.post('/adduser',
         });
 
         if (TestUser) {
-            // {header:{} , data: { name: TestUser.name, email: TestUser.email, id: TestUser.id } }
             res.status(200).json({
                 header: {
                     message: "User Made", code: 0
@@ -147,7 +123,8 @@ router.post('/adduser',
 
             TestUser.save().then(console.log('works?')).catch(err => res.status(400).json({
                 header: {
-                    message: "User cannot be saved", err,
+                    message: "User cannot be saved",
+                    err,
                     code: 1
                 }
             }));
@@ -185,7 +162,8 @@ router.post('/addblogs', protect,
 
             await TestBlog.save().then(console.log('works2?')).catch(err => res.status(400).json({
                 header: {
-                    message: "Blog cannot be saved", err,
+                    message: "Blog cannot be saved",
+                    err,
                     code: 1
                 }
             }));
@@ -208,7 +186,7 @@ router.delete('/deleteuser/:id', protect,
                 header: { message: "User Deleted", code: 0 }, data: user
             }))
             .catch(err => res.status(400).json({
-                header: { message: "Unable to find and delete user with given id", code: 1 }
+                header: { message: "Unable to find and delete user with given id", err, code: 1 }
             }))
     });
 
@@ -262,10 +240,9 @@ router.delete('/deleteuserWithBlogs/:id', protect,
                     }
                 })
             }
-        } catch (e) {
-            console.log("Deleted all blog for user error", e);
+        } catch (err) {
             return res.status(401).json({
-                header: { message: "User Not Authorized to delete.", code: 1 },
+                header: { message: "User Not Authorized to delete.", err, code: 1 },
             });
         }
     });
@@ -275,13 +252,25 @@ router.delete('/deleteuserWithBlogs/:id', protect,
 //deletes a blog given its Id.
 router.delete('/deleteblog/:id', protect,
     async (req, res) => {
-        await Blog.findOneAndDelete({ _id: req.params.id }).select("-blogbody")
-            .then(blog => res.status(200).json({
-                header: { message: "Blog Deleted", code: 0 }, data: blog
-            }))
-            .catch(err => res.status(400).json({
-                header: { message: "Unable to find and delete blog with given id", code: 1 }
-            }))
+        const deletedBlog = await Blog.findById(req.params.id);
+        if (!deletedBlog)
+            return res.status(400).json({ header: { message: "Invalid ID Blog doesn't exist", code: 1 } })
+
+
+        const checkUser = await User.findById({ _id: deletedBlog.user_id });
+        if (req.User.isAdmin || (req.User.id === checkUser.id)) {
+            await Blog.findOneAndDelete({ _id: req.params.id }).select("-blogbody")
+                .then(blog => res.status(200).json({
+                    header: { message: "Blog Deleted", code: 0 }, data: blog
+                }))
+                .catch(err => res.status(400).json({
+                    header: { message: "Unable to find and delete blog with given id", err, code: 1 }
+                }))
+        } else {
+            return res.status(401).json({
+                header: { message: "Not Authorized to access deleteblog route", code: 1 },
+            });
+        }
     });
 
 
@@ -292,7 +281,7 @@ router.get('/user/:id', protect,
         const user = await User.findById(userId).select('-password')
             .then(res.status(200))
             .catch(err => res.status(400).json({
-                header: { message: "Unable to find user with given id", code: 1 }
+                header: { message: "Unable to find user with given id", err, code: 1 }
             }));
 
         //do not .json data inside 'then()' as that exits out of the request. (Although that should work as well)
@@ -318,7 +307,7 @@ router.get('/blog/:id', protect,
         const blog = await Blog.findById(blogId)
             .then(res.status(200))
             .catch(err => res.status(400).json({
-                header: { message: "Unable to find and blog with given id", code: 1 }
+                header: { message: "Unable to find and blog with given id", err, code: 1 }
             }));
         if (blog) {
             return res.status(200).json({
@@ -454,29 +443,38 @@ router.put('/profile/:id', protect,
     async (req, res) => {
         const foundUser = await User.findById(req.params.id);
 
-        if (foundUser) {
-            foundUser.name = req.body.name || foundUser.name;
-            foundUser.email = req.body.email || foundUser.email;
-
-            if (req.body.password) {
-                foundUser.password = bcrypt.hashSync(req.body.password, 10)
-            }
-        } else {
+        if (!foundUser) {
             return res.status(404).json({
                 header: { message: "User not found", code: 1 }
             })
         }
 
-        const updatedUser = await foundUser.save();
-        if (updatedUser) {
-            return res.status(200).json({
-                header: { message: "User updated successfully", code: 0 },
-                data: updatedUser,
-            })
+        if (req.User.isAdmin || req.User.id === foundUser.id) {
+            if (foundUser) {
+                foundUser.name = req.body.name || foundUser.name;
+                foundUser.email = req.body.email || foundUser.email;
+
+                if (req.body.password) {
+                    foundUser.password = bcrypt.hashSync(req.body.password, 10)
+                }
+            }
+
+
+            const updatedUser = await foundUser.save();
+            if (updatedUser) {
+                return res.status(200).json({
+                    header: { message: "User updated successfully", code: 0 },
+                    data: updatedUser,
+                })
+            } else {
+                return res.status(400).json({
+                    header: { message: "User cannot be updated", code: 1 }
+                })
+            }
         } else {
-            return res.status(400).json({
-                header: { message: "User cannot be updated", code: 1 }
-            })
+            return res.status(401).json({
+                header: { message: "Not Authorized to access this route", code: 1 },
+            });
         }
     });
 
@@ -531,8 +529,10 @@ router.put('/updateblog/:id', protect,
                     header: { message: "Blog cannot be updated", code: 1 }
                 })
             }
-        } catch (error) {
-
+        } catch (err) {
+            return res.status(401).json({
+                header: { message: "Error in updating Blog", err, code: 1 },
+            });
         }
     });
 
@@ -557,7 +557,7 @@ router.put('/updatelikes/:bid/:uid', protect,
 
         } else {
             return res.status(404).json({
-                header: { message: "User not found", code: 1 }
+                header: { message: "User/Blog not found", code: 1 }
             })
         }
 
@@ -575,7 +575,6 @@ router.put('/updatelikes/:bid/:uid', protect,
             })
         }
     });
-
 
 
 
@@ -630,3 +629,23 @@ module.exports = router;
         //         }
 
         //     })
+//testing ignore
+// router.get('/first/:id',
+//     async (req, res) => {
+//         const userId_body = req.body.id;
+//         const userparamsID = req.params.id;
+//         console.log("UID check", userId_body, "paramsID:", userparamsID);
+//         // var user = new User;
+//         const user = await User.findById(userId_body).select('-password')//delete Id from body
+//         const admin = await User.findById(userparamsID).select('-password')//asad ID from params.
+//         // console.log("UID check2", user.name, "paramuser", admin.name);
+
+//         if (admin.isAdmin) {
+//             console.log("admin bool comparision works")
+
+//         } else {
+//             console.log("admin comparision failed")
+//         }
+
+//         res.json('Hello!!')
+//     });
