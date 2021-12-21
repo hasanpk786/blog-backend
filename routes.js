@@ -223,7 +223,8 @@ router.delete('/deleteuserWithBlogs/:id', protect,
             } else if (check1.isAdmin && checkUser.isAdmin && (check1.id !== checkUser.id)) {
                 console.log("One Admin deleting another");
                 return res.status(401).json({
-                    header: { message: "User Not Authorized to delete ANOTHER ADMIN.", code: 1 },
+                    //code 2 special case admin cannot delete another admin
+                    header: { message: "User Not Authorized to delete ANOTHER ADMIN.", code: 2 },
                 });
             } else {
                 const user = await User.findOneAndDelete({ _id: req.params.id }).select("-password")
