@@ -220,27 +220,27 @@ router.delete('/deleteuserWithBlogs/:id', protect,
                         header: { message: "User Not Authorized to delete.", code: 1 },
                     });
                 }
-            } else if (check1.isAdmin && checkUser.isAdmin && (check1.id !== checkUser.id)) {
+            } if (check1.isAdmin && checkUser.isAdmin && (check1.id !== checkUser.id)) {
                 console.log("One Admin deleting another");
                 return res.status(401).json({
                     //code 2 special case admin cannot delete another admin
                     header: { message: "User Not Authorized to delete ANOTHER ADMIN.", code: 2 },
                 });
-            } else {
-                const user = await User.findOneAndDelete({ _id: req.params.id }).select("-password")
-                const deleted_list = await Blog.find({ user_id: req.params.id })
-                const deleted = await Blog.collection.deleteMany({ user_id: removed });
-
-                console.log(removed)
-                return res.status(200).json({
-                    header: { message: "User Deleted with their blogs successfully", code: 0 },
-                    data: {
-                        user,
-                        deleted,
-                        deleted_list
-                    }
-                })
             }
+            const user = await User.findOneAndDelete({ _id: req.params.id }).select("-password")
+            const deleted_list = await Blog.find({ user_id: req.params.id })
+            const deleted = await Blog.collection.deleteMany({ user_id: removed });
+
+            console.log(removed)
+            return res.status(200).json({
+                header: { message: "User Deleted with their blogs successfully", code: 0 },
+                data: {
+                    user,
+                    deleted,
+                    deleted_list
+                }
+            })
+
         } catch (err) {
             return res.status(401).json({
                 header: { message: "User Not Authorized to delete.", err, code: 1 },
